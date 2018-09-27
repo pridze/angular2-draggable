@@ -15,6 +15,7 @@
                 #StageContainer>
             <div class="stage" [style.transform]="'scale(' + stageZoom + ')'" #Stage>
               <div ngDraggable
+                   ngResizable
                    [scale]="stageZoom"
                    [bounds]="Stage"
                    (started)="onStart($event)"
@@ -23,6 +24,8 @@
                    [preventDefaultEvent]="true"
                    (endOffset)="onMoveEnd($event)"
                    [inBounds]="true"
+                   [rzHandles]="'all'"
+                   [rzAspectRatio]="true"
                    class="drag-block">Drag Me!</div>
             </div>
           </div>

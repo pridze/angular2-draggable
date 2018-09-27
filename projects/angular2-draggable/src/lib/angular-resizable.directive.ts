@@ -111,6 +111,9 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
   /** emitted when stop resizing */
   @Output() rzStop = new EventEmitter<IResizeEvent>();
 
+  /** Input css scale transform of element so translations are correct */
+  @Input() scale = 1;
+
   constructor(private el: ElementRef<HTMLElement>, private renderer: Renderer2) {
     this._helperBlock = new HelperBlock(el.nativeElement, renderer);
   }
@@ -376,8 +379,8 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
   private resizeTo(p: Position) {
     p.subtract(this._origMousePos);
 
-    const tmpX = Math.round(p.x / this._gridSize.x) * this._gridSize.x;
-    const tmpY = Math.round(p.y / this._gridSize.y) * this._gridSize.y;
+    const tmpX = Math.round(p.x / this._gridSize.x / this.scale) * this._gridSize.x;
+    const tmpY = Math.round(p.y / this._gridSize.y / this.scale) * this._gridSize.y;
 
     if (this._direction.n) {
       // n, ne, nw
