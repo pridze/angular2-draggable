@@ -1,7 +1,8 @@
 import {
   Directive, ElementRef, Renderer2,
-  Input, Output, OnInit, HostListener,
-  EventEmitter, OnChanges, SimpleChanges, OnDestroy, AfterViewInit
+  Input, Output, OnInit,
+  EventEmitter, OnChanges, SimpleChanges,
+  OnDestroy, AfterViewInit, NgZone
 } from '@angular/core';
 
 import { IPosition, Position } from './models/position';
@@ -20,6 +21,10 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
   private oldZIndex = '';
   private _zIndex = '';
   private needTransform = false;
+  private _removeListener1: () => void;
+  private _removeListener2: () => void;
+  private _removeListener3: () => void;
+  private _removeListener4: () => void;
 
   /**
    * Bugfix: iFrames, and context unrelated elements block all events, and are unusable
@@ -92,11 +97,15 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
     }
   }
 
-  constructor(private el: ElementRef, private renderer: Renderer2) {
+  constructor(private el: ElementRef,
+              private renderer: Renderer2,
+              private zone: NgZone) {
     this._helperBlock = new HelperBlock(el.nativeElement, renderer);
   }
 
   ngOnInit() {
+    this._bindEvents();
+
     if (this.allowDrag) {
       let element = this.handle ? this.handle : this.el.nativeElement;
       this.renderer.addClass(element, 'ng-draggable');
@@ -113,6 +122,10 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
     this.tempTrans = null;
     this._helperBlock.dispose();
     this._helperBlock = null;
+    this._removeListener1();
+    this._removeListener2();
+    this._removeListener3();
+    this._removeListener4();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -158,13 +171,13 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
       this.transform();
 
       if (this.bounds) {
-        this.edge.emit(this.boundsCheck());
+        this.zone.run(() => this.edge.emit(this.boundsCheck()));
       }
 
-      this.movingOffset.emit({
+      this.zone.run(() => this.movingOffset.emit({
         x: this.tempTrans.x + this.oldTrans.x,
         y: this.tempTrans.y + this.oldTrans.y
-      });
+      }));
     }
   }
 
@@ -201,7 +214,7 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
     }
 
     if (!this.moving) {
-      this.started.emit(this.el.nativeElement);
+      this.zone.run(() => this.started.emit(this.el.nativeElement));
       this.moving = true;
     }
   }
@@ -253,7 +266,7 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
     }
 
     if (this.moving) {
-      this.stopped.emit(this.el.nativeElement);
+      this.zone.run(() => this.stopped.emit(this.el.nativeElement));
 
       // Remove the helper div:
       this._helperBlock.remove();
@@ -270,14 +283,14 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
       }
 
       if (this.bounds) {
-        this.edge.emit(this.boundsCheck());
+        this.zone.run(() => this.edge.emit(this.boundsCheck()));
       }
 
       this.moving = false;
-      this.endOffset.emit({
+      this.zone.run(() => this.endOffset.emit({
         x: this.tempTrans.x + this.oldTrans.x,
         y: this.tempTrans.y + this.oldTrans.y
-      });
+      }));
 
       if (this.trackPosition) {
         this.oldTrans.add(this.tempTrans);
@@ -319,48 +332,45 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
     return false;
   }
 
-  @HostListener('mousedown', ['$event'])
-  @HostListener('touchstart', ['$event'])
-  onMouseDown(event: MouseEvent | TouchEvent) {
-    // 1. skip right click;
-    if (event instanceof MouseEvent && event.button === 2) {
-      return;
-    }
-    // 2. if handle is set, the element can only be moved by handle
-    let target = event.target || event.srcElement;
-    if (this.handle !== undefined && !this.checkHandleTarget(target, this.handle)) {
-      return;
-    }
+  private _bindEvents() {
+    this.zone.runOutsideAngular(() => {
+      this._removeListener1 = this.renderer.listen(this.el.nativeElement, 'mousedown', (event: MouseEvent | TouchEvent) => {
+        // 1. skip right click;
+        if (event instanceof MouseEvent && event.button === 2) {
+          return;
+        }
+        // 2. if handle is set, the element can only be moved by handle
+        let target = event.target || event.srcElement;
+        if (this.handle !== undefined && !this.checkHandleTarget(target, this.handle)) {
+          return;
+        }
 
-    if (this.preventDefaultEvent) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
+        if (this.preventDefaultEvent) {
+          event.stopPropagation();
+          event.preventDefault();
+        }
 
-    this.orignal = Position.fromEvent(event);
-    this.pickUp();
-  }
+        this.orignal = Position.fromEvent(event);
+        this.pickUp();
+      });
+      this._removeListener2 = this.renderer.listen('document', 'mouseup', () => {
+        this.putBack();
+      });
+      this._removeListener3 = this.renderer.listen('document', 'mouseleave', () => {
+        this.putBack();
+      });
+      this._removeListener4 = this.renderer.listen('document', 'mousemove', (event: MouseEvent | TouchEvent) => {
+        if (this.moving && this.allowDrag) {
+          if (this.preventDefaultEvent) {
+            event.stopPropagation();
+            event.preventDefault();
+          }
 
-  @HostListener('document:mouseup')
-  @HostListener('document:mouseleave')
-  @HostListener('document:touchend')
-  @HostListener('document:touchcancel')
-  onMouseLeave() {
-    this.putBack();
-  }
-
-  @HostListener('document:mousemove', ['$event'])
-  @HostListener('document:touchmove', ['$event'])
-  onMouseMove(event: MouseEvent | TouchEvent) {
-    if (this.moving && this.allowDrag) {
-      if (this.preventDefaultEvent) {
-        event.stopPropagation();
-        event.preventDefault();
-      }
-
-      // Add a transparent helper div:
-      this._helperBlock.add();
-      this.moveTo(Position.fromEvent(event));
-    }
+          // Add a transparent helper div:
+          this._helperBlock.add();
+          this.moveTo(Position.fromEvent(event));
+        }
+      });
+    });
   }
 }

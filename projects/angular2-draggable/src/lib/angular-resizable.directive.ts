@@ -1,8 +1,8 @@
 import {
   Directive, ElementRef, Renderer2,
-  Input, Output, OnInit, HostListener,
+  Input, Output, OnInit,
   EventEmitter, OnChanges, SimpleChanges,
-  OnDestroy, AfterViewInit
+  OnDestroy, AfterViewInit, NgZone
 } from '@angular/core';
 
 import { HelperBlock } from './widgets/helper-block';
@@ -48,6 +48,9 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
    * https://github.com/xieziyu/angular2-draggable/issues/84
    */
   private _helperBlock: HelperBlock = null;
+  private _removeListener1: () => void;
+  private _removeListener2: () => void;
+  private _removeListener3: () => void;
 
   /** Disables the resizable if set to false. */
   @Input() set ngResizable(v: any) {
@@ -114,7 +117,9 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
   /** Input css scale transform of element so translations are correct */
   @Input() scale = 1;
 
-  constructor(private el: ElementRef<HTMLElement>, private renderer: Renderer2) {
+  constructor(private el: ElementRef<HTMLElement>,
+              private renderer: Renderer2,
+              private zone: NgZone) {
     this._helperBlock = new HelperBlock(el.nativeElement, renderer);
   }
 
@@ -133,6 +138,7 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
   }
 
   ngOnInit() {
+    this._bindEvents();
     this.updateResizable();
   }
 
@@ -141,6 +147,9 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
     this._containment = null;
     this._helperBlock.dispose();
     this._helperBlock = null;
+    this._removeListener1();
+    this._removeListener2();
+    this._removeListener3();
   }
 
   ngAfterViewInit() {
@@ -297,24 +306,29 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
     }
   }
 
-  @HostListener('document:mouseup')
-  @HostListener('document:mouseleave')
-  @HostListener('document:touchend')
-  @HostListener('document:touchcancel')
-  onMouseLeave() {
-    if (this._handleResizing) {
-      this.stopResize();
-      this._origMousePos = null;
-    }
-  }
-
-  @HostListener('document:mousemove', ['$event'])
-  @HostListener('document:touchmove', ['$event'])
-  onMouseMove(event: MouseEvent | TouchEvent) {
-    if (this._handleResizing && this._resizable && this._origMousePos && this._origPos && this._origSize) {
-      this.resizeTo(Position.fromEvent(event));
-      this.onResizing();
-    }
+  private _bindEvents() {
+    this.zone.runOutsideAngular(() => {
+      this._removeListener1 = this.renderer.listen('document', 'mouseup', () => {
+        // 1. skip right click;
+        if (this._handleResizing) {
+          this.stopResize();
+          this._origMousePos = null;
+        }
+      });
+      this._removeListener2 = this.renderer.listen('document', 'mouseleave', () => {
+        // 1. skip right click;
+        if (this._handleResizing) {
+          this.stopResize();
+          this._origMousePos = null;
+        }
+      });
+      this._removeListener3 = this.renderer.listen('document', 'mousemove', (event: MouseEvent | TouchEvent) => {
+        if (this._handleResizing && this._resizable && this._origMousePos && this._origPos && this._origSize) {
+          this.resizeTo(Position.fromEvent(event));
+          this.onResizing();
+        }
+      });
+    });
   }
 
   private startResize(handle: ResizeHandle) {
@@ -332,13 +346,13 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
     this._helperBlock.add();
     this._handleResizing = handle;
     this.updateDirection();
-    this.rzStart.emit(this.getResizingEvent());
+    this.zone.run(() => this.rzStart.emit(this.getResizingEvent()));
   }
 
   private stopResize() {
     // Remove the helper div:
     this._helperBlock.remove();
-    this.rzStop.emit(this.getResizingEvent());
+    this.zone.run(() => this.rzStop.emit(this.getResizingEvent()));
     this._handleResizing = null;
     this._direction = null;
     this._origSize = null;
@@ -349,7 +363,7 @@ export class AngularResizableDirective implements OnInit, OnChanges, OnDestroy, 
   }
 
   private onResizing() {
-    this.rzResizing.emit(this.getResizingEvent());
+    this.zone.run(() => this.rzResizing.emit(this.getResizingEvent()));
   }
 
   private getResizingEvent(): IResizeEvent {
