@@ -154,7 +154,7 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
   private moveTo(p: Position) {
     if (this.orignal) {
       p.subtract(this.orignal);
-      this.tempTrans.set(p);
+      this.tempTrans.set({x: p.x / this.scale, y: p.y / this.scale});
       this.transform();
 
       if (this.bounds) {
@@ -180,10 +180,6 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
     }
 
     let value = `translate(${translateX}px, ${translateY}px)`;
-
-    if (this.scale !== 1) {
-      value += ` scale(${this.scale})`;
-    }
 
     this.renderer.setStyle(this.el.nativeElement, 'transform', value);
     this.renderer.setStyle(this.el.nativeElement, '-webkit-transform', value);
@@ -223,19 +219,19 @@ export class AngularDraggableDirective implements OnInit, OnDestroy, OnChanges, 
 
       if (this.inBounds) {
         if (!result.top) {
-          this.tempTrans.y -= elem.top - boundary.top;
+          this.tempTrans.y -= (elem.top - boundary.top) / this.scale;
         }
 
         if (!result.bottom) {
-          this.tempTrans.y -= elem.bottom - boundary.bottom;
+          this.tempTrans.y -= (elem.bottom - boundary.bottom) / this.scale;
         }
 
         if (!result.right) {
-          this.tempTrans.x -= elem.right - boundary.right;
+          this.tempTrans.x -= (elem.right - boundary.right) / this.scale;
         }
 
         if (!result.left) {
-          this.tempTrans.x -= elem.left - boundary.left;
+          this.tempTrans.x -= (elem.left - boundary.left) / this.scale;
         }
 
         this.transform();

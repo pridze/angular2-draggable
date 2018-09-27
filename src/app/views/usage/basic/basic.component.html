@@ -2,9 +2,30 @@
   <div class="card-body">
     <h4 class="card-title">Basic Usage</h4>
     <div class="mt-4">
+      <div class="alert alert-secondary" role="alert">
+        movingOffset: {{'{'}} x: {{movingOffset.x}}, y: {{movingOffset.y}} {{'}'}}
+      </div>
+      <div class="alert alert-secondary" role="alert">
+        endOffset: {{'{'}} x: {{endOffset.x}}, y: {{endOffset.y}} {{'}'}}
+      </div>
       <tabset>
         <tab heading="demo">
-          <div ngDraggable class="drag-block">Drag Me!</div>
+          <div  class="stage-container"
+                (window:resize)="onWindowResize(StageContainer)"
+                #StageContainer>
+            <div class="stage" [style.transform]="'scale(' + stageZoom + ')'" #Stage>
+              <div ngDraggable
+                   [scale]="stageZoom"
+                   [bounds]="Stage"
+                   (started)="onStart($event)"
+                   (stopped)="onStop($event)"
+                   (movingOffset)="onMoving($event)"
+                   [preventDefaultEvent]="true"
+                   (endOffset)="onMoveEnd($event)"
+                   [inBounds]="true"
+                   class="drag-block">Drag Me!</div>
+            </div>
+          </div>
         </tab>
         <tab heading="html">
           <markdown [data]="demo_html | language: 'html'"></markdown>

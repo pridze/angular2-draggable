@@ -1,7 +1,30 @@
 @import 'variables';
 
+.ng-draggable {
+  cursor: move;
+  background-color: #20a8d8;
+}
+
+@mixin resizable-handle-circle() {
+  -webkit-box-shadow: 0 0 0 0 rgba(0,113,255,0);
+  -webkit-box-sizing: border-box;
+  -webkit-transition: -webkit-box-shadow .3s cubic-bezier(.4,.4,0,1);
+  background-color: #fff;
+  border: 1px solid #0071ff;
+  border-radius: 4.5px;
+  box-shadow: 0 0 0 0 rgba(0,113,255,0);
+  box-sizing: border-box;
+  content: "";
+  height: 9px;
+  position: absolute;
+  transition: -webkit-box-shadow .3s cubic-bezier(.4,.4,0,1);
+  transition: box-shadow .3s cubic-bezier(.4,.4,0,1);
+  transition: box-shadow .3s cubic-bezier(.4,.4,0,1),-webkit-box-shadow .3s cubic-bezier(.4,.4,0,1);
+  width: 9px;
+}
 .ng-resizable {
   position: relative;
+  box-shadow: 0 0 0 1px #0076ff;
 }
 
 .ng-resizable-handle {
@@ -17,6 +40,13 @@
     right: $handle-border-offset;
     height: 100%;
     top: 0;
+
+    &:after {
+      @include resizable-handle-circle();
+      top: 50%;
+      margin-top: -4.5px;
+      margin-left: -2px;
+    }
   }
 
   &.ng-resizable-w {
@@ -25,6 +55,12 @@
     left: $handle-border-offset;
     height: 100%;
     top: 0;
+
+    &:after {
+      @include resizable-handle-circle();
+      top: 50%;
+      margin-top: -4.5px;
+    }
   }
 
   &.ng-resizable-s {
@@ -33,6 +69,13 @@
     bottom: $handle-border-offset;
     width: 100%;
     left: 0;
+
+    &:after {
+      @include resizable-handle-circle();
+      left: 50%;
+      margin-top: -2px;
+      margin-left: -4.5px;
+    }
   }
 
   &.ng-resizable-n {
@@ -41,6 +84,12 @@
     top: $handle-border-offset;
     width: 100%;
     left: 0;
+
+    &:after {
+      @include resizable-handle-circle();
+      left: 50%;
+      margin-left: -4.5px;
+    }
   }
 
   &.ng-resizable-se {
@@ -49,6 +98,8 @@
     height: $handle-corner-size;
     right: $handle-corner-offset;
     bottom: $handle-corner-offset;
+
+    @include resizable-handle-circle();
   }
 
   &.ng-resizable-sw {
@@ -57,6 +108,8 @@
     height: $handle-corner-size;
     left: $handle-corner-offset;
     bottom: $handle-corner-offset;
+
+    @include resizable-handle-circle();
   }
 
   &.ng-resizable-ne {
@@ -65,6 +118,8 @@
     height: $handle-corner-size;
     right: $handle-corner-offset;
     top: $handle-corner-offset;
+
+    @include resizable-handle-circle();
   }
 
   &.ng-resizable-nw {
@@ -73,14 +128,7 @@
     height: $handle-corner-size;
     left: $handle-corner-offset;
     top: $handle-corner-offset;
+
+    @include resizable-handle-circle();
   }
 }
-
-.ng-resizable-diagonal {
-  box-sizing: border-box;
-  width: 0;
-  height: 0;
-  border-bottom: $handle-corner-size solid #aaa;
-  border-left: $handle-corner-size solid transparent;
-}
-
