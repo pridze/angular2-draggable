@@ -16,11 +16,6 @@ export class ResizeHandle {
     renderer.addClass(handle, 'ng-resizable-handle');
     renderer.addClass(handle, css);
 
-    // add default diagonal for se handle
-    if (type === 'se') {
-      renderer.addClass(handle, 'ng-resizable-diagonal');
-    }
-
     // append div to parent
     if (this.parent) {
       parent.appendChild(handle);
@@ -29,7 +24,6 @@ export class ResizeHandle {
     // create and register event listener
     this._onResize = (event) => { onMouseDown(event, this); };
     handle.addEventListener('mousedown', this._onResize);
-    handle.addEventListener('touchstart', this._onResize);
 
     // done
     this._handle = handle;
@@ -37,7 +31,6 @@ export class ResizeHandle {
 
   dispose() {
     this._handle.removeEventListener('mousedown', this._onResize);
-    this._handle.removeEventListener('touchstart', this._onResize);
 
     if (this.parent) {
       this.parent.removeChild(this._handle);
