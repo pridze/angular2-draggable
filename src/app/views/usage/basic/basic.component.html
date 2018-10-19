@@ -18,13 +18,18 @@
                    ngResizable
                    [scale]="stageZoom"
                    [bounds]="Stage"
+                   [gridSize]="50"
                    (started)="onStart($event)"
                    (stopped)="onStop($event)"
                    (movingOffset)="onMoving($event)"
                    [preventDefaultEvent]="true"
                    (endOffset)="onMoveEnd($event)"
                    [inBounds]="true"
-                   [rzHandles]="'all'"
+                   [rzHandles]="'n,e,s,w,se,sw'"
+                   [rzMinHeight]="150"
+                   [rzMaxHeight]="300"
+                   [rzMinWidth]="150"
+                   [rzMaxWidth]="300"
                    [rzAspectRatio]="true"
                    class="drag-block">Drag Me!</div>
             </div>
